@@ -1,0 +1,47 @@
+---
+title: "exploratory"
+format: html
+---
+
+```{r}
+library(tidyverse)
+
+fish <- read_csv('data/PISCO_kelpforest_fish.1.4.csv')
+
+taxon <- read_csv("data/PISCO_kelpforest_taxon_table.1.3.csv")
+```
+
+```{r}
+taxon <- taxon %>% 
+  filter(campus == "UCSB") %>% 
+  select(-campus)
+         
+         
+fish <- fish %>% 
+  filter(campus == "UCSB") %>% 
+  select(-campus)
+
+fish_names <- left_join(fish, taxon, by = "classcode")
+
+
+rockfish <- fish_names %>% 
+  filter(Genus == "Sebastes") %>% 
+  group_by(year, classcode) %>% 
+  mutate(total = sum(count)) %>% 
+  filter(total >= 100, # Only want to look at significant amounts of observations
+         fish_tl <= 10) # Select small rockfish
+
+```
+
+# Visualizing rockfish abundance by species
+```{r}
+ggplot(rockfish, aes(classcode, total)) +
+  geom_boxplot()
+
+```
+
+```{r}
+ggplot(rockfish, aes(temp, total, color = classcode)) +
+  geom_point()
+```
+
