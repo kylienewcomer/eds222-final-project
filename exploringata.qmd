@@ -5,10 +5,24 @@ format: html
 
 ```{r}
 library(tidyverse)
+library(sf)
+library(terra)
+#library(dismo)
+library(tmap)
+library(spData)
+library(terra)
+library(stars)
 
+states <- spData::us_states
 fish <- read_csv('data/PISCO_kelpforest_fish.1.4.csv')
 
 taxon <- read_csv("data/PISCO_kelpforest_taxon_table.1.3.csv")
+
+smurf <- read_csv("data/PISCO_UCSB_subtidal_recruitment_fish_data.1.2.csv")
+
+smurf_sp <- read_csv("data/PISCO_UCSB_subtidal_recruitment_fish_spp_list.1.2.csv")
+
+smurf_meta <- read_csv("data/PISCO_UCSB_subtidal_recruitment_site_list.1.3.csv")
 ```
 
 ```{r}
@@ -30,8 +44,53 @@ rockfish <- fish_names %>%
   mutate(total = sum(count)) %>% 
   filter(total >= 100, # Only want to look at significant amounts of observations
          fish_tl <= 10) # Select small rockfish
-
 ```
+
+
+Exploring different df
+```{r}
+recruits <- left_join(smurf, smurf_sp)
+
+recruits <- left_join(recruits, smurf_meta)
+
+rf_yoy <- recruits %>% 
+  filter(genus == "Sebastes") %>% 
+  group_by(classcode, year) %>% 
+  summarise(count = sum(total_fish_collected))
+
+
+highest_rf <- recruits %>% 
+  filter(genus == "Sebastes") %>% 
+  group_by(classcode) %>% 
+  summarise(count = sum(total_fish_collected)) %>% 
+  filter(count >= 1000)
+
+most_yoy <- highest_rf$classcode
+```
+
+
+```{r}
+rf_yoy <- recruits %>% 
+  filter(classcode %in% most_yoy) %>% 
+  group_by(classcode, year) %>% 
+  summarise(count = sum(total_fish_collected)) %>% 
+  ungroup()
+```
+```{r}
+rf_yoy_av <- recruits %>% 
+  filter(classcode %in% most_yoy) %>% 
+  group_by(classcode, year) %>% 
+  summarise(av_fish = mean(total_fish_collected)) %>% 
+  ungroup()
+```
+```{r}
+rf_locations <- recruits %>% 
+  filter(classcode %in% most_yoy) %>% 
+  group_by(site_code) %>% 
+  summarise(count = sum(total_fish_collected)) %>% 
+  ungroup()
+```
+
 
 # Visualizing rockfish abundance by species
 ```{r}
@@ -43,5 +102,30 @@ ggplot(rockfish, aes(classcode, total)) +
 ```{r}
 ggplot(rockfish, aes(temp, total, color = classcode)) +
   geom_point()
+```
+
+```{r}
+ggplot(rf_yoy_av, aes(year, av_fish)) +
+  geom_line(aes(color = classcode))
+```
+```{r}
+ggplot(recruits, aes(LONG_WGS84, LAT_WGS84, )) +
+  geom_point()
+
+```
+```{r}
+ca <- states %>% 
+  dplyr::filter(NAME == "California") %>% 
+  st_transform(crs = 4326)
+```
+
+```{r}
+ci_bbox <- st_bbox(c(xmin = -130.3, ymin = 33.0, xmax = -119, ymax = 34.4), crs = st_crs(4326))
+
+
+ci <- st_crop(ca, ci_bbox)
+
+tm_shape(ci) +
+  tm_polygons()
 ```
 
