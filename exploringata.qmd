@@ -1,60 +1,54 @@
 ---
 title: "exploratory"
+author: "Kylie Newcomer"
 format: html
 ---
 
 ```{r}
 library(tidyverse)
-library(sf)
-library(terra)
-#library(dismo)
-library(tmap)
-library(spData)
-library(terra)
-library(stars)
+library(knitr)
+library(pscl)
 
-states <- spData::us_states
-fish <- read_csv('data/PISCO_kelpforest_fish.1.4.csv')
-
-taxon <- read_csv("data/PISCO_kelpforest_taxon_table.1.3.csv")
 
 smurf <- read_csv("data/PISCO_UCSB_subtidal_recruitment_fish_data.1.2.csv")
 
 smurf_sp <- read_csv("data/PISCO_UCSB_subtidal_recruitment_fish_spp_list.1.2.csv")
 
-smurf_meta <- read_csv("data/PISCO_UCSB_subtidal_recruitment_site_list.1.3.csv")
+
+
+# Data for ocean temperature and upwelling
+ocean <- read_csv("data/ALL_OCEAN_DATA.csv")
+
 ```
 
-```{r}
-taxon <- taxon %>% 
-  filter(campus == "UCSB") %>% 
-  select(-campus)
-         
-         
-fish <- fish %>% 
-  filter(campus == "UCSB") %>% 
-  select(-campus)
-
-fish_names <- left_join(fish, taxon, by = "classcode")
-
-
-rockfish <- fish_names %>% 
-  filter(Genus == "Sebastes") %>% 
-  group_by(year, classcode) %>% 
-  mutate(total = sum(count)) %>% 
-  filter(total >= 100, # Only want to look at significant amounts of observations
-         fish_tl <= 10) # Select small rockfish
-```
-
-
-Exploring different df
+## Exploring df
 ```{r}
 recruits <- left_join(smurf, smurf_sp)
 
-recruits <- left_join(recruits, smurf_meta)
 
-rf_yoy <- recruits %>% 
-  filter(genus == "Sebastes") %>% 
+recruits$Date <- as.Date(paste(recruits$year, recruits$month, recruits$day, sep = "/"))
+ocean$Date <- as.Date(ocean$Date, format = "%m/%d/%Y")
+
+recruit_ocean <- left_join(recruits, ocean)
+  
+
+rf_yoy <- recruit_ocean %>% 
+  filter(year >= 2012  &
+        (month >= 2 & month <= 7)) %>% 
+  filter(str_detect(site_code, "HAZ")| # Filter data for on Pelican and Hazards sample sites
+            str_detect(site_code, "PEL")) %>% 
+  filter(classcode == "KGBC" | classcode == "SCAR/SCAU" | classcode == "SATR") #KGB - SCAR/SCAU - SATR - PCLA
+
+kb_yoy <- recruit_ocean %>% 
+  filter((classcode == "PCLA") & 
+           (year >= 2012) &
+        (month >= 7 & month <= 11)) %>% 
+  filter(str_detect(site_code, "HAZ")| # Filter data for on Pelican and Hazards sample sites
+            str_detect(site_code, "PEL"))
+  
+      
+  
+summarized_yoy <- rf_yoy %>% 
   group_by(classcode, year) %>% 
   summarise(count = sum(total_fish_collected))
 
@@ -68,64 +62,142 @@ highest_rf <- recruits %>%
 most_yoy <- highest_rf$classcode
 ```
 
-
 ```{r}
-rf_yoy <- recruits %>% 
-  filter(classcode %in% most_yoy) %>% 
-  group_by(classcode, year) %>% 
-  summarise(count = sum(total_fish_collected)) %>% 
-  ungroup()
-```
-```{r}
-rf_yoy_av <- recruits %>% 
-  filter(classcode %in% most_yoy) %>% 
+rf_yoy_av <- rf_yoy %>% 
   group_by(classcode, year) %>% 
   summarise(av_fish = mean(total_fish_collected)) %>% 
   ungroup()
-```
-```{r}
-rf_locations <- recruits %>% 
-  filter(classcode %in% most_yoy) %>% 
-  group_by(site_code) %>% 
-  summarise(count = sum(total_fish_collected)) %>% 
-  ungroup()
-```
-
-
-# Visualizing rockfish abundance by species
-```{r}
-ggplot(rockfish, aes(classcode, total)) +
-  geom_boxplot()
-
-```
-
-```{r}
-ggplot(rockfish, aes(temp, total, color = classcode)) +
-  geom_point()
 ```
 
 ```{r}
 ggplot(rf_yoy_av, aes(year, av_fish)) +
   geom_line(aes(color = classcode))
 ```
+
+
 ```{r}
-ggplot(recruits, aes(LONG_WGS84, LAT_WGS84, )) +
-  geom_point()
+ggplot(rf_yoy, aes(month, total_fish_collected)) +
+  geom_jitter(aes(color = classcode))
+```
+
+
+```{r}
+ggplot(kb_yoy, aes(month, total_fish_collected)) +
+  geom_jitter()
 
 ```
 ```{r}
-ca <- states %>% 
-  dplyr::filter(NAME == "California") %>% 
-  st_transform(crs = 4326)
+for(i in seq_along(rf_yoy)){
+  if (rf_yoy$total_fish_collected[i] >= 1)
+    {rf_yoy$success[i] <- 1}
+    else
+      {rf_yoy$success[i] <- 0}
+}
+```
+
+
+## Statistical analysis
+
+FishPresence ~ binomial(1, p)
+$$
+logit(p) = B0 + B1 * SST
+$$
+```{r}
+B0 <- 3
+B1 <- -0.1
+
+
+logit_p <- B0 + B1 * x
+
+p <- exp(logit_p) / 
+  (1 + exp(logit_p))
+
+# Simulate presences and absence
+success <- rbinom(n = 1000, size = 1, prob = p)
+```
+
+Fishcount ~ NegativeBinomial(r, p)
+$$
+log(p) = B2 + B3 * SST
+$$
+```{r}
+B2 <- 2
+B3 <- 0.1
+
+log_mu <- B2 + B3 * x
+mu <- exp(log_mu)
+
+# Simulate count data
+count <- rnbinom(n = 1000, size = 1.5, mu = mu)
+```
+
+
+```{r}
+rf_presence_model <- glm(success ~ SST_D30 + beuti_30,  # formula: response ~ resp
+                   data = rf_yoy, # data remains unchanged
+                   family = binomial(link = "logit"))
+
+summary(rf_presence_model)
 ```
 
 ```{r}
-ci_bbox <- st_bbox(c(xmin = -130.3, ymin = 33.0, xmax = -119, ymax = 34.4), crs = st_crs(4326))
+x <- seq(min(rf_yoy$SST_D30),max(rf_yoy$SST_D30), length.out = 1)
 
 
-ci <- st_crop(ca, ci_bbox)
+B0 <- 3
+B1 <- -0.1
 
-tm_shape(ci) +
-  tm_polygons()
+
+logit_p <- B0 + B1 * x
+
+p <- exp(logit_p) / 
+  (1 + exp(logit_p))
+
+# Simulate presences and absence
+success <- rbinom(n = 1000, size = 1, prob = p)
+
+B2 <- 2
+B3 <- 0.1
+
+log_mu <- B2 + B3 * x
+mu <- exp(log_mu)
+
+# Simulate count data
+count <- rnbinom(n = 1000, size = 1.5, mu = mu)
+
+
+# Create actual count (factor in successes and failures)
+actual_count <- success * count
+
+
+simulated_data <- as_tibble(expand_grid(x, actual_count))
+
+simulated_success <- as_tibble(expand_grid(x, success))
 ```
 
+```{r}
+glm(success ~ x,
+    data = simulated_success,
+    family = binomial(link = "logit"))
+```
+
+
+Using 
+```{r}
+mod.hurdle <- hurdle(total_fish_collected ~ SST_D30, 
+                     data = rf_yoy, 
+                     dist = "negbin", 
+                     zero.dist = "binomial",
+                     link = "logit")
+
+summary(mod.hurdle)
+```
+
+## generating 0 and 1s
+```{r}
+
+```
+
+BEUTI
+
+SST
