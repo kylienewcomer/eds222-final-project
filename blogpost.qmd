@@ -170,13 +170,7 @@ rf_abundance_model <- glm.nb(actual_abu ~ mean_sst,  # formula: response ~ resp
 modelsummary(rf_abundance_model)
 ```
 
-```{r}
-ggplot(new_recruits, aes(mean_sst, actual_abu)) +
-  geom_point() +
-  labs(x = "SST lag 30 days",
-       y = "YOY count") +
-  theme_light()
-
+```{r
 ```
 
 ```{r}
