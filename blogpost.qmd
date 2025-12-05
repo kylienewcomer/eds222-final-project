@@ -1,0 +1,179 @@
+---
+title: "Analyzing the impacts of temperature on rockfish recruitment in the Channel Islands"
+date: 12/4/2025
+format: html
+execute:
+  warning: false
+  message: false
+---
+
+![Photo from SeaDoc Society](images/rf_yoy.pdf){fig-align="center"}
+
+## Background
+
+Rockfish (genus *Sebastes*) are an important commercial and recreational fishing target on the west coast. The early life stages of Rockfish are spent in the water column until they grow strong enough to swim to structure. With global ocean temperatures increasing, I aim to analyze how increases in water temperature during Pelagic Larval Duration (PLD) affects the abundance of new rockfish, or Young of Year (YOY). I will utilize timeseries data of YOY abundance collected at the Northern Channel Islands. During data collection, California experienced a marine heatwave often referred to as "The Blob" during 2014-2016. I will analyze the effects of temperature on YOY abundance from 2012 to 2019 in order to determine if the warmer waters during the Blob influenced abundance and give insight to how the population may change has global ocean temperatures increase due to climate change.
+
+## About the data
+
+The data quantifying Rockfish recruitment comes from the Partnership of Interdiscpilnary Sciences of Coastal Oceans (PISCO) long-term fish recruitment monitoring in the Channel Islands. The YOYs were collected using Standardized Monitoring Units for the Recruitment of Fishes (SMURFs) that were placed just off the coast of the Northern Channel Islands in an attempt to collect recruit fish as they swam to structure. Monitoring took place from 2000-2018, with collections occuring year round starting in 2012.
+
+The data quantifying temperature is Sea Surface Temperature (SST) from NOAA.
+
+## Hypotheses
+
+H0: Temperature has no effect on rockfish recruitment
+
+Ha: Increased temperature has a positive effect on rockfish recruitment
+
+## DAG
+
+![](images/dag_rfyoy.pdf){fig-align="center"}
+
+## Load necessary packages and data
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(pscl)
+library(modelsummary)
+library(MASS)
+
+
+smurf <- read_csv("data/PISCO_UCSB_subtidal_recruitment_fish_data.1.2.csv")
+
+smurf_sp <- read_csv("data/PISCO_UCSB_subtidal_recruitment_fish_spp_list.1.2.csv")
+
+
+
+# Data for ocean temperature and upwelling
+ocean <- read_csv("data/ALL_OCEAN_DATA.csv")
+
+
+```
+
+## Data Cleaning
+
+Before I can start working on my statistical modelings, I need to do some cleaning and filtering to get the data ready to be analyzed. I first subset my data to include only my species of interest. I chose Copper, Kelp, Gopher, Grass, and Brown rockfish, because they have similar PLDs and are difficult to differentiate at a small size. I chose to look at data between 2012-2019 to include before, during, and after the Blob. I also narrowed the window of sampling by year to only include sampling during the months of recruitment to avoid a seasonal pattern from emerging. I chose to only look at the two most consistently sampled sites, which were locatied at Santa Cruz island.
+
+```{r}
+recruits <- left_join(smurf, smurf_sp)
+
+
+recruits$Date <- as.Date(paste(recruits$year, recruits$month, recruits$day, sep = "/"))
+ocean$Date <- as.Date(ocean$Date, format = "%m/%d/%Y")
+
+recruit_ocean <- left_join(recruits, ocean)
+  
+
+rf_yoy <- recruit_ocean %>% 
+  filter(year >= 2012  &
+        (month >= 2 & month <= 7)) %>% 
+  filter(str_detect(site_code, "HAZ")| # Filter data for on Pelican and Hazards sample sites
+            str_detect(site_code, "PEL")) %>% 
+  filter(classcode == "KGBC" | classcode == "SCAR/SCAU" | classcode == "SATR") #KGB - SCAR/SCAU - SATR 
+      
+  
+summarized_yoy <- rf_yoy %>% 
+  group_by(classcode, year) %>% 
+  summarise(count = sum(total_fish_collected))
+
+
+highest_rf <- recruits %>% 
+  filter(genus == "Sebastes") %>% 
+  group_by(classcode) %>% 
+  summarise(count = sum(total_fish_collected)) %>% 
+  filter(count >= 1000)
+
+most_yoy <- highest_rf$classcode
+```
+
+```{r}
+rf_yoy_av <- rf_yoy %>% 
+  group_by(classcode, year) %>% 
+  summarise(av_fish = mean(total_fish_collected)) %>% 
+  ungroup()
+```
+
+```{r}
+ggplot(rf_yoy_av, aes(year, av_fish)) +
+  geom_line(aes(color = classcode)) +
+  scale_color_manual(values = c("darkgreen", "brown4", "lightblue")) +
+  labs(x = "Year",
+       y = "Annual total fish collected") +
+  theme_light()
+```
+
+```{r}
+ggplot(rf_yoy, aes(month, total_fish_collected)) +
+  geom_jitter(aes(color = classcode)) +
+  scale_color_manual(values = c("darkgreen", "brown4", "lightblue"))
+  labs(x = "Month",
+       y = "Total fish collected") +
+    theme_light()
+```
+
+```         
+```
+
+```{r}
+for(i in seq_along(rf_yoy)){
+  if (rf_yoy$total_fish_collected[i] >= 1)
+    {rf_yoy$success[i] <- 1}
+    else
+      {rf_yoy$success[i] <- 0}
+}
+```
+
+## Statistical analysis
+
+In order to analyze this data, I selected a hurdle model because the data contains many 0's. Hurdle models are a type of heirarchal model that first tests presence and absence (0 and 1) with a predictor variable, then tests abundance. I chose to use a binomial model for presence and absence which can be written as:
+
+$$FishPresence ~ binomial(1, p)$$ $$logit(p) = B0 + B1 * SST$$
+
+To begin simulating data, I need to generate x values based on the SST lag 30 days variable from the original data. From there I can use those temperatures and beta values I selected to run the binomial equation to find `logit(p)`. I think take the inverse logit of those values to generate p which represents the probability of success. Using that probability, I simulated a success variable with `rbinom()` to generate 0's and 1's.
+
+To simulate abundance data, I used a negative binomial model which is written as:
+
+$$Fishcount ~ NegativeBinomial(\mu, \theta)$$ $$log(\mu) = B2 + B3 * SST$$
+
+Similar to the binomial step, I chose new beta values for the equation and used the same generated temperature data. The output of the negative binomial equation gives log of mu, or the mean. By applying an exponential to that, the mean of the data is found, which is then used to simulate count data using `rnbinom()`.
+
+```{r}
+B0 <- 3
+B1 <- -0.1
+B2 <- 2
+B3 <- 0.1
+
+new_recruits <- expand_grid(mean_sst = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
+                                           max(rf_yoy$SST_D30, na.rm = TRUE),
+                                           length.out = 1000)) %>% 
+  mutate(logit_p = B0 + B1 * mean_sst,
+         p = exp(logit_p) / (1 + exp(logit_p)),
+         success = rbinom(n = 1000, size = 1, prob = p),
+         log_mu = B2 + B3 * mean_sst,
+         mu = exp(log_mu),
+         count = rnbinom(n = 1000, size = 1.5, mu = mu),
+         actual_abu = success * count)
+
+rf_presence_model <- glm(success ~ mean_sst,  # formula: response ~ resp
+                   data = new_recruits, # data remains unchanged
+                   family = binomial(link = "logit"))
+
+modelsummary(rf_presence_model)
+```
+
+```{r}
+rf_abundance_model <- glm.nb(actual_abu ~ mean_sst,  # formula: response ~ resp
+                   data = new_recruits)
+
+modelsummary(rf_abundance_model)
+```
+
+```{r}
+ggplot(new_recruits, aes(mean_sst, actual_abu)) +
+  geom_point() +
+  labs(x = "SST lag 30 days",
+       y = "YOY count") +
+  theme_light()
+
+```
