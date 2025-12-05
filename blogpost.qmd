@@ -157,7 +157,8 @@ new_recruits <- expand_grid(mean_sst = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
 
 rf_presence_model <- glm(success ~ mean_sst,  # formula: response ~ resp
                    data = new_recruits, # data remains unchanged
-                   family = binomial(link = "logit"))
+                   family = binomial(link = "logit"),
+                   )
 
 modelsummary(rf_presence_model)
 ```
@@ -177,3 +178,60 @@ ggplot(new_recruits, aes(mean_sst, actual_abu)) +
   theme_light()
 
 ```
+
+```{r}
+rf_presence_model_se <- predict(rf_presence_model, 
+                          newdata = new_recruits,
+                          type = "link", # stay in link space
+                          se.fit = TRUE)
+
+linkinv <- family(rf_presence_model)$linkinv
+
+new_recruits %>% 
+  mutate(
+    logit_p = rf_presence_model$fit,
+    # 95% CI in link space
+    logit_p_se = rf_presence_model_se$se.fit,
+    logit_p_lwr = qnorm(0.025, mean = logit_p, sd = logit_p_se),
+    logit_p_upr = qnorm(0.975, mean = logit_p, sd = logit_p_se),
+    # undo the link function using linkinv
+    p = linkinv(logit_p),
+    p_lwr = linkinv(logit_p_lwr),
+    p_upr = linkinv(logit_p_upr)
+  ) %>% 
+  ggplot(aes(mean_sst, p)) +
+  geom_ribbon(aes(ymin = p_lwr, ymax = p_upr), alpha = 0.2) +
+  geom_line() +
+  labs(c = "SST") +
+  theme_light()
+```
+```{r}
+rf_abu_pred <- predict(rf_abundance_model, 
+                          newdata = new_recruits,
+                          type = "link", # stay in link space
+                          se.fit = TRUE)
+
+
+new_recruit_pred <- new_recruits %>% 
+  mutate(
+    log_mu = rf_abu_pred$fit,
+    # 95% CI in link space
+    log_mu_se = rf_abu_pred$se.fit,
+    log_mu_lwr = qnorm(0.025, mean = log_mu, sd = log_mu_se),
+    log_mu_upr = qnorm(0.975, mean = log_mu, sd = log_mu_se),
+    # undo the link function using linkinv
+    mu = exp(log_mu),
+    mu_lwr = exp(log_mu_lwr),
+    mu_upr = exp(log_mu_upr)
+  )
+
+
+ggplot() +
+  geom_point(data = new_recruits, aes(mean_sst, actual_abu), color = "lightgray") +
+  geom_ribbon(data = new_recruit_pred, aes(x = mean_sst, ymin = mu_lwr, ymax = mu_upr), alpha = 0.4, fill = 'darkgreen') +
+  geom_line(data = new_recruit_pred, aes(mean_sst, mu)) +
+  labs(x = "SST",
+       y = "Total recruits collected") +
+  theme_light()
+```
+
