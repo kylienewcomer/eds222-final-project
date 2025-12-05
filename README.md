@@ -2,7 +2,9 @@
 
 This repository contains the final project materials for EDS 222 - *Statistics for Environmental Data Science*.
 
-This project uses a Hurdle Model to simulate rockfish recruitment data from Sea Surface Temperature.
+## About
+This project aims apply a Hurdle Model to rockfish recruitment data in the Channel Islands. 
+
 
 ## Hypotheses
 
