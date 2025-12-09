@@ -173,6 +173,9 @@ actual_count <- success * count
 simulated_data <- as_tibble(expand_grid(x, actual_count))
 
 simulated_success <- as_tibble(expand_grid(x, success))
+
+ggplot(simulated_data, aes(x, actual_count)) +
+  geom_point()
 ```
 
 ```{r}

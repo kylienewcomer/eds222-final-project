@@ -1,0 +1,57 @@
+classcode,genus,species,description,taxonomic_source,aphiaID,scientific_name,kingdom,phylum,class,order,family
+AAFF,Atherinops,affinis,Topsmelt,WoRMS,279812,Atherinops affinis,Animalia,Chordata,Actinopterygii,Atheriniformes,Atherinidae
+AFLA,Aulorhynchus,flavidus,Tubesnout,WoRMS,279839,Aulorhynchus flavidus,Animalia,Chordata,Actinopterygii,Gasterosteiformes,Aulorhynchidae
+AHOL,Alloclinus,holderi,Island Kelpfish,WoRMS,279560,Alloclinus holderi,Animalia,Chordata,Actinopterygii,Perciformes,Labrisomidae
+BFRE,Brachyistius,frenatus,Kelp Surfperch,WoRMS,240721,Brachyistius frenatus,Animalia,Chordata,Actinopterygii,Perciformes,Embiotocidae
+CLIN,Clinidae,spp.,"Kelpfishes and Fringeheads, unidentifed sp.",WoRMS,125530,Clinidae,Animalia,Chordata,Actinopterygii,Perciformes,Clinidae
+RNIC,Rhinogobiops,Nicholsii,Blackeye Goby,WoRMS,282580,Rhinogobiops nicholsii,Animalia,Chordata,Actinopterygii,Perciformes,Gobiidae
+CPRI,Caulolatilus,princeps,Ocean Whitefish,WoRMS,276217,Caulolatilus princeps,Animalia,Chordata,Actinopterygii,Perciformes,Malacanthidae
+CPUN,Chromis,punctipinnis,Blacksmith,WoRMS,273751,Chromis punctipinnis,Animalia,Chordata,Actinopterygii,Perciformes,Pomacentridae
+CSTI,Citharichthys,stigmaeus,Speckled Sanddab,WoRMS,275696,Citharichthys stigmaeus,Animalia,Chordata,Actinopterygii,Pleuronectiformes,Paralichthyidae
+GMAE,Gobiesox,maeandricus,Northern Clingfish,WoRMS,275671,Gobiesox maeandricus,Animalia,Chordata,Actinopterygii,Gobiesociformes,Gobiesocidae
+GMET,Gibbonsia,metzi,Striped Kelpfish,WoRMS,280835,Gibbonsia metzi,Animalia,Chordata,Actinopterygii,Perciformes,Clinidae
+GMON,Gibbonsia,montereyensis,Crevice Kelpfish,WoRMS,280836,Gibbonsia montereyensis,Animalia,Chordata,Actinopterygii,Perciformes,Clinidae
+GNIG,Girella,nigricans,Opaleye,WoRMS,280865,Girella nigricans,Animalia,Chordata,Actinopterygii,Perciformes,Kyphosidae
+GRHE,Gobiesox,rhessodon,California Clingfish,WoRMS,275679,Gobiesox rhessodon,Animalia,Chordata,Actinopterygii,Gobiesociformes,Gobiesocidae
+HDEC,Hexagrammos,decagrammus,Kelp Greenling,WoRMS,240732,Hexagrammos decagrammus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Hexagrammidae
+HGEN,Hypsoblennius,gentilis,Bay Blenny,WoRMS,276323,Hypsoblennius gentilis,Animalia,Chordata,Actinopterygii,Perciformes,Blenniidae
+HJEN,Hypsoblennius,jenkinsi,Mussel Blenny,WoRMS,276328,Hypsoblennius jenkinsi,Animalia,Chordata,Actinopterygii,Perciformes,Blenniidae
+HROS,Heterostichus,rostratus,Giant Kelpfish,WoRMS,281075,Heterostichus rostratus,Animalia,Chordata,Actinopterygii,Perciformes,Clinidae
+HLAG,Hexagrammos,lagocephalus,Rock Greenling,WoRMS,240735,Hexagrammos lagocephalus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Hexagrammidae
+ILOC,Icichthys,lockingtoni,Medusafish,WoRMS,279354,Icichthys lockingtoni,Animalia,Chordata,Actinopterygii,Perciformes,Centrolophidae
+KGBC,Sebastes,"atrovirens,carnatus,chrysomelas,caurinus","This speceis group includes Kelp, Gopher, BlackandYellow, and Copper Rockfish young of the year. Individual rockfish that could be confidently identified to Copper/Gopher (Sebastes carnatus & S. caurinus) or Kelp (S. atrovirens) were recorded as such.  Individuals that could not be confidently to species, were count in the ‘KGBC’ complex that includes Kelp, Gopher, Black&Yellow, and Copper Rockfish. For example, no single individual was counted in both the Copper/Gopher and KGBC category.  ",WoRMS,274772/274779/240737/274780,Sebastes atrovirens/carnatus/chrysomelas/caurinus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+LMUC,Liparis,mucosus,Slimy Snailfish,WoRMS,274527,Liparis mucosus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Liparidae
+NBLA,Neoclinus,blanchardi,Sarcastic Fringehead,WoRMS,281679,Neoclinus blanchardi,Animalia,Chordata,Actinopterygii,Perciformes,Chaenopsidae
+OCAL,Oxyjulis,californica,Seniorita,WoRMS,240727,Oxyjulis californica,Animalia,Chordata,Actinopterygii,Perciformes,Labridae
+OELO,Ophiodon,elongatus,Lingcod,WoRMS,240745,Ophiodon elongatus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Hexagrammidae
+OTRI,Odontopyxis,trispinosa,Pgymy Poacher,WoRMS,281836,Odontopyxis trispinosa,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Agonidae
+PANINT,Panulirus,interruptus,Spiny Lobster,WoRMS,382898,Panulirus interruptus,Animalia,Arthropoda,Malacostraca,Decapoda,Palinuridae
+PCLA,Paralabrax,clathratus,Kelp Bass,WoRMS,282054,Paralabrax clathratus,Animalia,Chordata,Actinopterygii,Perciformes,Serranidae
+PLEU,Pleuronectidae,spp.,"Righteyed flounders, unidentified sp.",WoRMS,125579,Pleuronectidae,Animalia,Chordata,Actinopterygii,Pleuronectiformes,Pleuronectidae
+RMUS,Rimicola,muscarum,Kelp Clingfish,WoRMS,282617,Rimicola muscarum,Animalia,Chordata,Actinopterygii,Gobiesociformes,Gobiesocidae
+SATR,Sebastes,atrovirens,"Kelp Rockfish. Individual rockfish that could be confidently identified to Copper/Gopher (Sebastes carnatus & S. caurinus) or Kelp (S. atrovirens) were recorded as such.  Individuals that could not be confidently to species, were count in the ‘KGBC’ complex that includes Kelp, Gopher, Black&Yellow, and Copper Rockfish. For example, no single individual was counted in both the Copper/Gopher and KGBC category.  ",WoRMS,274772,Sebastes atrovirens,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SAUR,Sebastes,auriculatus,Brown Rockfish,WoRMS,274773,Sebastes auriculatus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SCAR/SCAU,Sebastes,"carnatus, caurinus","Gopher or Copper Rockfish. Individual rockfish that could be confidently identified to Copper/Gopher (Sebastes carnatus & S. caurinus) or Kelp (S. atrovirens) were recorded as such.  Individuals that could not be confidently to species, were count in the ‘KGBC’ complex that includes Kelp, Gopher, Black&Yellow, and Copper Rockfish. For example, no single individual was counted in both the Copper/Gopher and KGBC category.  ",WoRMS,274779/274780,Sebastes carnatus/caurinus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SDIP,Sebastes,diploproa,Splitnose Rockfish,WoRMS,274787,Sebastes diploproa,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SENT,Sebastes,entomelas,Widow Rockfish,WoRMS,274791,Sebastes entomelas,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SFLA,Sebastes,flavidus,Yellowtail Rockfish,WoRMS,274795,Sebastes flavidus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SMAR,Scorpaenichthys,marmoratus,Cabezon,WoRMS,282726,Scorpaenichthys marmoratus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Cottidae
+SMEL,Sebastes,melanops,Black Rockfish,WoRMS,274817,Sebastes melanops,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SMIN,Sebastes,miniatus,Vermilion Rockfish,WoRMS,274820,Sebastes miniatus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SMYS,Sebastes,mystinus,Blue Rockfish,WoRMS,274823,Sebastes mystinus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SPAU,Sebastes,paucispinis,Bocaccio,WoRMS,274833,Sebastes paucispinis,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SRUB,Sebastes,rubrivinctus,Flag Rockfish,WoRMS,274845,Sebastes rubrivinctus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SSAG,Sardinops,sagax,Pacific Sardine,WoRMS,217452,Sardinops sagax,Animalia,Chordata,Actinopterygii,Clupeiformes,Clupeidae
+SSAX,Sebastes,saxicola,Stripetail Rockfish,WoRMS,274848,Sebastes saxicola,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SSEM,Sebastes,semicinctus,Halfbanded Rockfish,WoRMS,274851,Sebastes semicinctus,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SSER,Sebastes,serranoides,Olive Rockfish,WoRMS,274852,Sebastes serranoides,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+STRE,Sebastes,serriceps,Treefish,WoRMS,274853,Sebastes serriceps,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
+SXYO,Stellerina,xyosterna,Pricklebreast Poacher,WoRMS,254366,Stellerina xyosterna,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Agonidae
+TSYM,Trachurus,symmetricus,Jack Mackerel,WoRMS,273305,Trachurus symmetricus,Animalia,Chordata,Actinopterygii,Perciformes,Carangidae
+USAN,Ulvincola,sanctaerosae,Kelp Gunnel,WoRMS,322270,Ulvicola sanctaerosae,Animalia,Chordata,Actinopterygii,Perciformes,Pholidae
+XATR,Xiphister,atropurpureus,Black Prickleback,WoRMS,283194,Xiphister atropurpureus,Animalia,Chordata,Actinopterygii,Perciformes,Stichaeidae
+AFUC,Apodichthys,fucorum,Rockweed Gunnel,WoRMS,279665,Apodichthys fucorum,Animalia,Chordata,Actinopterygii,Perciformes,Pholidae
+COTT,Cottidae,spp.,"Sculpins, unidentifed sp., possibly Calico Sculpin (Clinocottus embryum)",WoRMS,125589,Cottidae,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Cottidae
+HGIL,Hypsoblennius,gilberti,Rockpool Blenny,WoRMS,276324,Hypsoblennius gilberti,Animalia,Chordata,Actinopterygii,Perciformes,Blenniidae
+SPUL,Semicossyphus,pulcher,Sheephead,WoRMS,282753,Semicossyphus pulcher,Animalia,Chordata,Actinopterygii,Perciformes,Labridae
+SCHR,Sebastes,chrysomelas,Black and Yellow Rockfish,WoRMS,240737,Sebastes chrysomelas,Animalia,Chordata,Actinopterygii,Scorpaeniformes,Sebastidae
