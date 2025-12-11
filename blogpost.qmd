@@ -7,7 +7,7 @@ execute:
   message: false
 ---
 
-![Photo from SeaDoc Society](images/rf_yoy.pdf){fig-align="center"}
+![Photo from SeaDoc Society](images/yoy.jpeg){fig-align="center"}
 
 ## Background
 
@@ -25,9 +25,17 @@ H0: Temperature has no effect on rockfish recruitment
 
 Ha: Increased temperature has a positive effect on rockfish recruitment
 
-## DAG
+## Directed Acyclic Grad (DAG)
 
-![](images/dag_rfyoy.pdf){fig-align="center"}
+![](images/dag.png)
+
+## Hurdle Model
+$$FishPresence \sim Binomial(1, p) \\ 
+logit(p) = \beta_0 + \beta_1 SST + \beta_2 BEUTI$$
+
+$$Fishcount \sim NegativeBinomial(\mu, \theta) \\ 
+log(\mu) = \beta_3 + \beta_4 SST + \beta_5 BEUTI$$
+
 
 ## Load necessary packages and data
 
@@ -112,9 +120,6 @@ ggplot(rf_yoy, aes(month, total_fish_collected)) +
     theme_light()
 ```
 
-```         
-```
-
 ```{r}
 for(i in seq_along(rf_yoy)){
   if (rf_yoy$total_fish_collected[i] >= 1)
@@ -126,15 +131,17 @@ for(i in seq_along(rf_yoy)){
 
 ## Statistical analysis
 
-In order to analyze this data, I selected a hurdle model because the data contains many 0's. Hurdle models are a type of heirarchal model that first tests presence and absence (0 and 1) with a predictor variable, then tests abundance. I chose to use a binomial model for presence and absence which can be written as:
+In order to analyze this data, I selected a hurdle model because the data contains many 0's. Hurdle models are a type of hierarchical model that first tests presence and absence (0 and 1) with a predictor variable, then tests abundance. I chose to use a binomial model for presence and absence which can be written as:
 
-$$FishPresence ~ binomial(1, p)$$ $$logit(p) = B0 + B1 * SST$$
+$$FishPresence \sim Binomial(1, p) \\ 
+logit(p) = \beta_0 + \beta_1 SST + \beta_2 BEUTI$$
 
-To begin simulating data, I need to generate x values based on the SST lag 30 days variable from the original data. From there I can use those temperatures and beta values I selected to run the binomial equation to find `logit(p)`. I think take the inverse logit of those values to generate p which represents the probability of success. Using that probability, I simulated a success variable with `rbinom()` to generate 0's and 1's.
+and a negative binomial model for abudnacne which is written as:
 
-To simulate abundance data, I used a negative binomial model which is written as:
+$$Fishcount \sim NegativeBinomial(\mu, \theta) \\ 
+log(\mu) = \beta_3 + \beta_4 SST BEUTI$$
 
-$$Fishcount ~ NegativeBinomial(\mu, \theta)$$ $$log(\mu) = B2 + B3 * SST$$
+For simplicity while understanding the model, I selected only temperature as predciter value to simulate data and get my beta values returned to me. To begin simulating data, I need to generate x values based on the SST lag 30 days variable from the original data. From there I can use those temperatures and beta values I selected to run the binomial equation to find `logit(p)`. I think take the inverse logit of those values to generate p which represents the probability of success. Using that probability, I simulated a success variable with `rbinom()` to generate 0's and 1's. 
 
 Similar to the binomial step, I chose new beta values for the equation and used the same generated temperature data. The output of the negative binomial equation gives log of mu, or the mean. By applying an exponential to that, the mean of the data is found, which is then used to simulate count data using `rnbinom()`.
 
@@ -155,22 +162,79 @@ new_recruits <- expand_grid(mean_sst = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
          count = rnbinom(n = 1000, size = 1.5, mu = mu),
          actual_abu = success * count)
 
-rf_presence_model <- glm(success ~ mean_sst,  # formula: response ~ resp
+sim_hurdle_model <- hurdle(actual_abu ~ mean_sst,  # formula: response ~ resp
                    data = new_recruits, # data remains unchanged
-                   family = binomial(link = "logit"),
+                   zero.dist = "binomial",
+                   dist = "negbin"
                    )
 
-modelsummary(rf_presence_model)
+modelsummary(sim_hurdle_model)
+```
+I successfully simulated data, applied the hurdle model, and got my beta values back!
+
+
+
+## Finding CI for 
+```{r}
+true_hurdle_model <- hurdle(total_fish_collected ~ SST_D30 + beuti_30, 
+                            data = rf_yoy,
+                            dist = "negbin",
+                            zero.dist = "binomial")
+
+modelsummary(true_hurdle_model)
+```
+
+
+```{r}
+ci_hurdle <- confint(true_hurdle_model, level = 0.95)
+
+lower_zero <- ci_hurdle[4,1]
+upper_zero <- ci_hurdle[4,2]
+
+lower_abu <- ci_hurdle[2,1]
+upper_abu <- ci_hurdle[2,2]
 ```
 
 ```{r}
-rf_abundance_model <- glm.nb(actual_abu ~ mean_sst,  # formula: response ~ resp
-                   data = new_recruits)
-
-modelsummary(rf_abundance_model)
+new_recruit_pred <- rf_yoy %>% 
+  mutate(
+    
+    zero_upper_ci = upper_zero,
+    zero_lower_ci = lower_zero,
+    abu_upper_ci = upper_abu,
+    abu_lower_ci = lower_abu,
+    actual_abu_lower_ci = lower_abu * lower_zero,
+    actual_abu_upper_ci = upper_abu * upper_zero
+  )
+ggplot(new_recruit_pred, aes(mean_sst, total_fish_collected)) +
+  geom_line(,) +
+  geom_ribbon(aes(ymin = actual_abu_lower_ci, ymax = actual_abu_upper_ci), alpha = 0.2) +
+  geom_point() +
+  labs(c = "SST") +
+  theme_light()
 ```
 
-```{r
+
+
+
+```{r}
+new_recruits %>% 
+  mutate(
+    logit_p = rf_presence_model$fit,
+    # 95% CI in link space
+    logit_p_se = rf_presence_model_se$se.fit,
+    logit_p_lwr = qnorm(0.025, mean = logit_p, sd = logit_p_se),
+    logit_p_upr = qnorm(0.975, mean = logit_p, sd = logit_p_se),
+    # undo the link function using linkinv
+    p = linkinv(logit_p),
+    p_lwr = linkinv(logit_p_lwr),
+    p_upr = linkinv(logit_p_upr)
+  ) %>% 
+  ggplot(aes(mean_sst, p)) +
+  geom_ribbon(aes(ymin = p_lwr, ymax = p_upr), alpha = 0.2) +
+  geom_line() +
+  labs(c = "SST") +
+  theme_light()
 ```
 
 ```{r}
@@ -180,6 +244,7 @@ rf_presence_model_se <- predict(rf_presence_model,
                           se.fit = TRUE)
 
 linkinv <- family(rf_presence_model)$linkinv
+
 
 new_recruits %>% 
   mutate(
@@ -199,25 +264,17 @@ new_recruits %>%
   labs(c = "SST") +
   theme_light()
 ```
+
+# Generate pred
 ```{r}
-rf_abu_pred <- predict(rf_abundance_model, 
-                          newdata = new_recruits,
-                          type = "link", # stay in link space
-                          se.fit = TRUE)
 
 
-new_recruit_pred <- new_recruits %>% 
-  mutate(
-    log_mu = rf_abu_pred$fit,
-    # 95% CI in link space
-    log_mu_se = rf_abu_pred$se.fit,
-    log_mu_lwr = qnorm(0.025, mean = log_mu, sd = log_mu_se),
-    log_mu_upr = qnorm(0.975, mean = log_mu, sd = log_mu_se),
-    # undo the link function using linkinv
-    mu = exp(log_mu),
-    mu_lwr = exp(log_mu_lwr),
-    mu_upr = exp(log_mu_upr)
-  )
+
+```
+
+
+```{r}
+
 
 
 ggplot() +
@@ -228,4 +285,3 @@ ggplot() +
        y = "Total recruits collected") +
   theme_light()
 ```
-
