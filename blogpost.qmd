@@ -1,10 +1,11 @@
 ---
 title: "Analyzing the impacts of temperature on rockfish recruitment in the Channel Islands"
-date: 12/4/2025
+date: 12/12/2025
 format: html
 execute:
   warning: false
   message: false
+code-fold: true
 ---
 
 ![Photo from SeaDoc Society](images/yoy.jpeg){fig-align="center"}
@@ -15,7 +16,7 @@ Rockfish (genus *Sebastes*) are an important commercial and recreational fishing
 
 ## About the data
 
-The data quantifying Rockfish recruitment comes from the Partnership of Interdiscpilnary Sciences of Coastal Oceans (PISCO) long-term fish recruitment monitoring in the Channel Islands. The YOYs were collected using Standardized Monitoring Units for the Recruitment of Fishes (SMURFs) that were placed just off the coast of the Northern Channel Islands in an attempt to collect recruit fish as they swam to structure. Monitoring took place from 2000-2018, with collections occuring year round starting in 2012.
+The data quantifying Rockfish recruitment comes from the Partnership of Interdisciplinary Sciences of Coastal Oceans (PISCO) long-term fish recruitment monitoring in the Channel Islands. The YOYs were collected using Standardized Monitoring Units for the Recruitment of Fishes (SMURFs) that were placed just off the coast of the Northern Channel Islands in an attempt to collect recruit fish as they swam to structure. Monitoring took place from 2000-2018, with collections occuring year round starting in 2012.
 
 NOAA data is used to quantify temperature with Sea Surface Temperature (SST) lag 30 days from time of collection to predict SST during PLD. Upwelling was quanitified using the Biological Effective Upwelling Transport Index (BEUTI) lag 30 days. 
 
@@ -25,11 +26,10 @@ H0: Temperature has no effect on rockfish recruitment
 
 Ha: Increased temperature has a positive effect on rockfish recruitment
 
-## Directed Acyclic Grad (DAG)
+## Directed Acyclic Graph (DAG)
 
 ![](images/dag.png)
-Upwelling is the result of moving water, often bringing cold, nutrient rich water from the deep up to the surface. This impacts the SST, decreasing temperature during mass upwelling. Additionally, the nutrients supplied in upwelling have a direct impact on YOY development, providing necessary nutrients during the PLD. The temprature also impacts fish development in the PLD, with faster development occuring at warmer temperatures.
-
+Upwelling is the result of moving water, often bringing cold, nutrient rich water from the deep up to the surface. This impacts the SST, decreasing temperature during mass upwelling. Additionally, the nutrients supplied in upwelling have a direct impact on YOY development, providing necessary nutrients during the PLD. Temperature also impacts fish development in the PLD, with faster development occurring at warmer temperatures.
 
 
 ## Load necessary packages and data
@@ -39,7 +39,6 @@ library(knitr)
 library(pscl)
 library(modelsummary)
 library(MASS)
-
 
 smurf <- read_csv("data/PISCO_UCSB_subtidal_recruitment_fish_data.1.2.csv")
 
@@ -102,23 +101,19 @@ rf_yoy_av <- rf_yoy %>%
 ```
 
 ```{r}
+
 ggplot(rf_yoy_av, aes(year, av_fish)) +
   geom_line(aes(color = classcode)) +
+  geom_vline(xintercept = 2014, color = "red", linetype = "dashed") +
+  geom_vline(xintercept = 2016, color = "red", linetype = "dashed") +
   scale_color_manual(values = c("darkgreen", "brown4", "lightblue")) +
   labs(x = "Year",
        y = "Annual total fish collected",
-       title = "Recruit Rockfish counts over time") +
+       title = "Recruit Rockfish counts over time",
+       color = "Species") +
   theme_light()
 ```
-
-```{r}
-ggplot(rf_yoy, aes(month, total_fish_collected)) +
-  geom_jitter(aes(color = classcode)) +
-  scale_color_manual(values = c("darkgreen", "brown4", "lightblue"))
-  labs(x = "Month",
-       y = "Total fish collected") +
-    theme_light()
-```
+The red-dashed lines denote the beginning and end of the blob. Rockfish YOY abundance began increasing in the years leading up to the blob while the waters gradually warmed. Naturally the abundance dipped after reaching a peak, but began to climb again during the marine heat wave, suggesting that the warmer waters were beneficial 
 
 ```{r}
 for(i in 1:nrow(rf_yoy)){
@@ -133,14 +128,15 @@ for(i in 1:nrow(rf_yoy)){
 
 ## Statistical analysis
 ### Hurdle Model
-In order to analyze this data, I selected a hurdle model because the data contains many 0's. Hurdle models are a type of hierarchical model that first tests presence and absence (0 and 1) with a predictor variable, then tests abundance. For these steps 
-$$FishPresence \sim Binomial(1, p) \\ 
-logit(p) = \beta_0 + \beta_1 SST + \beta_2 BEUTI$$
+In order to analyze this data, I selected a hurdle model because the data contains many 0's. Hurdle models are a type of hierarchical model that first tests presence and absence (0 and 1) with a predictor variable, then tests abundance. The presence-absence model is written using a Binomial model:
+$$FishPresence \sim Binomial(1, p) $$
 
-$$Fishcount \sim NegativeBinomial(\mu, \theta) \\ 
-log(\mu) = \beta_3 + \beta_4 SST + \beta_5 BEUTI$$
+$$logit(p) = \beta_0 + \beta_1 SST + \beta_2 BEUTI$$
+The abundance uses a Negative Binomial model:
+$$YOYcount \sim NegativeBinomial(\mu, \theta)$$
+$$log(\mu) = \beta_3 + \beta_4 SST + \beta_5 BEUTI$$
 
-For simplicity in understanding the model, I only selected temperature as predictor variable to simulate data and get my beta values returned to me. To begin simulating data, I need to generate x values based on the SST lag 30 days variable from the original data. From there I can use those temperatures and beta values I selected to run the binomial equation to find `logit(p)`. I think take the inverse logit of those values to generate p which represents the probability of success. Using that probability, I simulated a success variable with `rbinom()` to generate 0's and 1's. 
+For simplicity in understanding the model, I only selected temperature as predictor variable to simulate data and return my selected beta values. To begin simulating data, I need to generate x values based on the SST lag 30 days variable from the original data. From there I can use those temperatures and beta values I selected to run the binomial equation to find `logit(p)`. I think take the inverse logit of those values to generate p which represents the probability of success. Using that probability, I simulated a success variable with `rbinom()` to generate 0's and 1's. 
 
 Similar to the binomial step, I chose new beta values for the equation and used the same generated temperature data. The output of the negative binomial equation gives log of mu, or the mean. By applying an exponential to that, the mean of the data is found, which is then used to simulate count data using `rnbinom()`.
 
@@ -173,7 +169,7 @@ I successfully simulated data, applied the hurdle model, and got my beta values 
 
 
 
-## Hurdle model Application
+## Hurdle Model Application
 After completing a simulation of data and running a hurdle model, I can apply it to my data. I will add my upwelling variable back in to test my hypothesis
 ```{r}
 true_hurdle_model <- hurdle(total_fish_collected ~ SST_D30 * beuti_30, 
@@ -185,268 +181,111 @@ modelsummary(true_hurdle_model)
 ```
 
 
-# Generate pred
-
-
-
-
-## References
-
-
-
-
+## Generate predictions with hurdle model
+After completing a simulation of data and running a hurdle model, I can apply it to my data. I will add my upwelling variable back in to test my hypothesis
 ```{r}
-B0 <- 3
-B1 <- -0.1
-B2 <- 2
-B3 <- 0.1
+true_hurdle_model <- hurdle(total_fish_collected ~ SST_D30 * beuti_30, 
+                            data = rf_yoy,
+                            dist = "negbin",
+                            zero.dist = "binomial")
 
-pres_abs <- expand_grid(mean_sst = seq(0,40, length.out = 1000)) %>% 
-  mutate(logit_p = B0 + B1 * mean_sst,
-         p = exp(logit_p) / (1 + exp(logit_p)),
-         success = rbinom(n = 1000, size = 1, prob = p), 
-         log_mu = B2 + B3 * mean_sst,
-         mu = exp(log_mu),
-         count = rnbinom(n = 1000, size = 1.5, mu = mu))
-
-rf_presence_model <- glm(success ~ mean_sst,  # formula: response ~ resp
-                   data = pres_abs, # data remains unchanged
-                   family = binomial(link = "logit")
-                   )
-modelsummary(rf_presence_model)
-
-no_zero <- pres_abs %>% 
-  filter(count > 0)
-
-rf_abundance_model <- glm.nb(count ~ mean_sst,  # formula: response ~ resp
-                   data = no_zero)
-                  
-modelsummary(rf_abundance_model)
-```
-
-## Generating the predictions with the data
-```{r}
-
-pred_grid <- expand_grid(SST_D30 = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
-                                           max(rf_yoy$SST_D30, na.rm = TRUE),
-                                           length.out = 100),
-                         beuti_30 = seq(min(rf_yoy$beuti_30, na.rm = TRUE),
-                                           max(rf_yoy$beuti_30, na.rm = TRUE),
-                                           length.out = 100))
-
-true_pres_abs_model <- glm(success ~ SST_D30 * beuti_30,
-                     data = rf_yoy, # data remains unchanged
-                     family = binomial(link = "logit")
-                   )
-
-
-true_pres_abs_pred <- pred_grid %>%  
-  mutate(predict = predict(object = true_pres_abs_model,
-                          newdata = pred_grid,
-                          type = "response"))
-
-
-rf_presence_model_se <- predict(true_pres_abs_model, newdata = true_pres_abs_pred, type = "link", se.fit = TRUE)
-
-
-linkinv <- family(true_pres_abs_model)$linkinv
-
-pres_abs_pred <- true_pres_abs_pred %>% 
-  mutate(
-    logit_p = rf_presence_model_se$fit,
-    # 95% CI in link space
-    logit_p_se = rf_presence_model_se$se.fit,
-    logit_p_lwr = qnorm(0.025, mean = logit_p, sd = logit_p_se),
-    logit_p_upr = qnorm(0.975, mean = logit_p, sd = logit_p_se),
-    # undo the link function using linkinv
-    p = linkinv(logit_p),
-    p_lwr = linkinv(logit_p_lwr),
-    p_upr = linkinv(logit_p_upr)
-  )
-
-ggplot(pres_abs_pred, aes(SST_D30, logit_p)) +
-  geom_line() +
-  geom_ribbon(aes(ymin = logit_p_lwr, ymax = logit_p_upr), alpha = 0.2) +
-  labs(c = "SST") +
-  theme_light()
-```
-## Abundance model
-Now that I have predicted values for presence and absence, I need to predit the abundance using a Negative Binomial model. I have to fit the assumption that there are no 0's, so I will filter out the 0's, and predict abudance values.
-```{r}
-no_zero_yoy <- rf_yoy %>% 
-  filter(success == 1)
-
-rf_abundance_model <- glm.nb(total_fish_collected ~ SST_D30 * beuti_30,  # formula: response ~ resp
-                   data = no_zero_yoy)
-
-
-true_abu_pred <- pres_abs_pred %>%
-  mutate(predict = predict(object = rf_abundance_model,
-                          newdata = pred_grid,
-                          type = "response"))
-
-rf_abundance_model_se <- predict(rf_abundance_model, 
-                          newdata = true_abu_pred,
-                          type = "link", # stay in link space
-                          se.fit = TRUE)
-
-linkinv <- family(rf_abundance_model)$linkinv
-
-hurdle_pred <- true_abu_pred %>% 
-  mutate(
-    log_mu = rf_abundance_model_se$fit,
-    # 95% CI in link space
-    log_mu_se = rf_abundance_model_se$se.fit,
-    log_mu_lwr = qnorm(0.025, mean = log_mu, sd = log_mu_se),
-    log_mu_upr = qnorm(0.975, mean = log_mu, sd = log_mu_se),
-    # undo the link function using linkinv
-    mu = exp(log_mu),
-    mu_lwr = exp(log_mu_lwr),
-    mu_upr = exp(log_mu_upr)
-  )
-
-ggplot(hurdle_pred, aes(SST_D30, mu)) +
-  geom_ribbon(aes(ymin = mu_lwr, ymax = mu_upr), alpha = 0.2) +
-  geom_line() +
-  labs(c = "SST") +
-  theme_light()
-
-
-```
-## Hurdle Model prediction
-The final step of executing the hurdle model is multiplying my coefficients from the previous equations to get a best fit line. The confidence interval can also be found this way, after transforming into response space.
-```{r}
-hurdle_pred %>% 
-  mutate(
-    fit = log_mu * logit_p,
-    upper_ci = log_mu_upr * logit_p_upr,
-    lower_ci = log_mu_lwr * logit_p_lwr) %>% 
-    ggplot(aes(SST_D30, fit)) +
-  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), alpha = 0.2) +
-  geom_line() +
-  labs(c = "SST") +
-  theme_light()
+modelsummary(true_hurdle_model)
 ```
 
 
-# My Mess
 ```{r}
 pred_grid <- expand_grid(SST_D30 = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
                                            max(rf_yoy$SST_D30, na.rm = TRUE),
                                            length.out = 1000),
-                         beuti_30 = seq(min(rf_yoy$beuti_30, na.rm = TRUE),
-                                           max(rf_yoy$beuti_30, na.rm = TRUE),
-                                           length.out = 1000)) 
-  
-hurdle_model_pred <- pred_grid %>%  
-  mutate(predict = predict(object = true_hurdle_model,
+                         beuti_30 = mean(rf_yoy$beuti_30))
+
+# reiterate through the boot 1000 times
+boot <-  map_dfr(1:1000, \(i) {
+  # sample with replacement
+  boot_sample <- slice_sample(rf_yoy, n=432, replace = TRUE)
+  # run a beta regression on every single boot sample
+  boot_mod <- hurdle(total_fish_collected ~ SST_D30 * beuti_30, 
+                            data = boot_sample,
+                            dist = "negbin",
+                            zero.dist = "binomial")
+    # predict the boots values (the outcomes are best fit lines)
+  mutate(pred_grid,
+         count = predict(object = boot_mod,
                           newdata = pred_grid,
-                          type = "response")) 
+                          type = "response"),
+         
+         boot = i)
+})
 ```
 
+
 ```{r}
-ggplot(data = hurdle_model_pred, aes(x = SST_D30, y = predict)) +
-  geom_line(aes(color = beuti_30), alpha = 0.5)+
-  scale_color_viridis_c() +
-  labs(color = "BEUTI lag 30 days",
-       x = "SST degrees C",
-       y = "Predicted YOY counts") +
+pred_hurdle_model <- mutate(pred_grid,
+                            count = predict(object = true_hurdle_model,
+                                            newdata = pred_grid,
+                                            type = "response"))
+```
+
+
+```{r}
+ggplot(boot, aes(SST_D30, count)) +
+  geom_line(color = "lightblue", alpha = 0.05) +
+  geom_line(data = pred_hurdle_model, aes(SST_D30, count), color = "navy") +
+  labs(x = "SST degrees C",
+       y = "Rockfish YOY abundance",
+       title = "Hurdle model prediction of YOY abundance") +
   theme_light()
 ```
 
+The confidence intervals are visualized through the bootstrapped values. According to the predictions, at an SST of 11.5 degrees C, we 95% confident the mean count of YOY's would fall between 25 and 175. On the higher end of the temperature range, around 16.5 degrees C, we are 95% confident the mean abundance of YOY's would fall between 0 and 60. The narrowest CI occurs around 14 degrees C, where we are 95% confident the mean value falls between 20 and 45 YOY. Additionally, there appears to be a negative relationship between SST and rockfish YOY abundance, leading me to fail to reject my null hypothesis.
 
-
-I can use my model to predict confidence intervals
 ```{r}
-ci_hurdle <- confint(true_hurdle_model, level = 0.95)
+pred_grid2 <- expand_grid(SST_D30 = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
+                                           max(rf_yoy$SST_D30, na.rm = TRUE),
+                                           length.out = 1000))
 
-lower_zero <- ci_hurdle["zero_SST_D30",1]
-upper_zero <- ci_hurdle["zero_SST_D30",2]
+# reiterate through the boot 1000 times
+boot2 <-  map_dfr(1:1000, \(i) {
+  # sample with replacement
+  boot_sample <- slice_sample(rf_yoy, n=432, replace = TRUE)
+  # run a beta regression on every single boot sample
+  boot_mod <- hurdle(total_fish_collected ~ SST_D30, 
+                            data = boot_sample,
+                            dist = "negbin",
+                            zero.dist = "binomial")
+    # predict the boots values (the outcomes are best fit lines)
+  mutate(pred_grid2,
+         count = predict(object = boot_mod,
+                          newdata = pred_grid2,
+                          type = "response"),
+         boot = i)
+})
 
-lower_abu <- ci_hurdle["count_SST_D30",1]
-upper_abu <- ci_hurdle["count_SST_D30",2]
+```
+## Using a hurdle model without upwelling predictor variable
+Because of the hurdle model structure it is hard to visualize how confounding variables influence the response. I removed upwelling from the model and bootstrapped to determine how upwelling impacts the relationship between SST and YOY abundance. 
 
-ci_hurdle
+```{r}
+true_hurdle_model2 <- hurdle(total_fish_collected ~ SST_D30, 
+                            data = rf_yoy,
+                            dist = "negbin",
+                            zero.dist = "binomial")
 ```
 
-
-
+```{r}
+pred_hurdle_model2 <- mutate(pred_grid2,
+                            count = predict(object = true_hurdle_model2,
+                                            newdata = pred_grid2,
+                                            type = "response"))
+```
 
 ```{r}
-
-
-
-
-
-new_recruit_pred <- rf_yoy %>% 
-  mutate(
-    
-    zero_upper_ci = upper_zero,
-    zero_lower_ci = lower_zero,
-    abu_upper_ci = upper_abu,
-    abu_lower_ci = lower_abu,
-    actual_abu_lower_ci = lower_abu * lower_zero,
-    actual_abu_upper_ci = upper_abu * upper_zero
-  )
-ggplot(new_recruit_pred, aes(mean_sst, total_fish_collected)) +
-  geom_line() +
-  geom_ribbon(aes(ymin = actual_abu_lower_ci, ymax = actual_abu_upper_ci), alpha = 0.2) +
-  geom_point() +
-  labs(c = "SST") +
+ggplot(boot2, aes(SST_D30, count)) +
+  geom_line(color = "lightblue", alpha = 0.1) +
+  geom_line(data = pred_hurdle_model2, aes(SST_D30, count), color = "navy") +
+  labs(x = "SST degrees C",
+       y = "Rockfish YOY abundance",
+       title = "Hurdle model prediction of YOY abundance") +
   theme_light()
 ```
-
-```{r}
-
-```
-
-
-
-```{r}
-new_recruits %>% 
-  mutate(
-    logit_p = rf_presence_model$fit,
-    # 95% CI in link space
-    logit_p_se = rf_presence_model_se$se.fit,
-    logit_p_lwr = qnorm(0.025, mean = logit_p, sd = logit_p_se),
-    logit_p_upr = qnorm(0.975, mean = logit_p, sd = logit_p_se),
-    # undo the link function using linkinv
-    p = linkinv(logit_p),
-    p_lwr = linkinv(logit_p_lwr),
-    p_upr = linkinv(logit_p_upr)
-  ) %>% 
-  ggplot(aes(mean_sst, p)) +
-  geom_ribbon(aes(ymin = p_lwr, ymax = p_upr), alpha = 0.2) +
-  geom_line() +
-  labs(c = "SST") +
-  theme_light()
-```
-
-```{r}
-rf_presence_model_se <- predict(rf_presence_model, 
-                          newdata = new_recruits,
-                          type = "link", # stay in link space
-                          se.fit = TRUE)
-
-linkinv <- family(rf_presence_model)$linkinv
-
-
-new_recruits %>% 
-  mutate(
-    logit_p = rf_presence_model$fit,
-    # 95% CI in link space
-    logit_p_se = rf_presence_model_se$se.fit,
-    logit_p_lwr = qnorm(0.025, mean = logit_p, sd = logit_p_se),
-    logit_p_upr = qnorm(0.975, mean = logit_p, sd = logit_p_se),
-    # undo the link function using linkinv
-    p = linkinv(logit_p),
-    p_lwr = linkinv(logit_p_lwr),
-    p_upr = linkinv(logit_p_upr)
-  ) %>% 
-  ggplot(aes(mean_sst, p)) +
-  geom_ribbon(aes(ymin = p_lwr, ymax = p_upr), alpha = 0.2) +
-  geom_line() +
-  labs(c = "SST") +
-  theme_light()
-```
-
+Without upwelling, temperature appears to have less of an effect on YOY abundance. Additionally, the CI at both tail ends are noticebly larger than in the model including upwelling. While no definititve conclusions can be made from the data about impacts of SST and upwelling, there does appear to be a negative relationship between temperature and YOY abundance, with that relationship increasing with the addition of upwelling.
