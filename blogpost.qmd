@@ -274,3 +274,8 @@ ggplot(boot2, aes(SST_D30, count)) +
   theme_light()
 ```
 Without upwelling, temperature appears to have less of an effect on YOY abundance. Additionally, the CI at both tail ends are noticebly larger than in the model that includes upwelling. While no definitive conclusions can be made from the data visualization about the impacts of SST and upwelling, there does appear to be a negative relationship between temperature and YOY abundance, with that relationship strengthening with the addition of upwelling.
+
+## References
+ERDDAP - SST, Aqua MODIS, NPP, 0.0125°, West US, Day time (11 microns), 2002-present (1 Day Composite) - Data Access Form. (2016). Noaa.gov. https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd1day.html
+
+Jennifer E. Caselle, Peter M. Carlson, Chris Honeyman, Avrey Parsons-Field, & Katie D. Koehn. (2020). PISCO UCSB Subtidal Fish Recruitment Data. PISCO MN. doi:10.6085/AA/PISCO_UCSB_Fish_Recruitment.1.3.
