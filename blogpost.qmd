@@ -24,12 +24,12 @@ NOAA data is used to quantify temperature with Sea Surface Temperature (SST) lag
 
 H0: Temperature has no effect on rockfish recruitment
 
-Ha: Increased temperature has a positive effect on rockfish recruitment
+Ha: Increased temperature has an effect on rockfish recruitment
 
 ## Directed Acyclic Graph (DAG)
 
 ![](images/dag.png)
-Upwelling is the result of moving water, often bringing cold, nutrient rich water from the deep up to the surface. This impacts the SST, decreasing temperature during mass upwelling. Additionally, the nutrients supplied in upwelling have a direct impact on YOY development, providing necessary nutrients during the PLD. Temperature also impacts fish development in the PLD, with faster development occurring at warmer temperatures.
+Upwelling is the result of moving water, often bringing cold, nutrient rich water from the deep up to the surface. This impacts the SST, decreasing temperature during mass upwelling events. Additionally, the nutrients supplied in upwelling have a direct impact on YOY development, providing necessary nutrients during the PLD. Temperature also impacts fish development in the PLD, with faster development occurring at warmer temperatures.
 
 
 ## Load necessary packages and data
@@ -54,7 +54,7 @@ ocean <- read_csv("data/ALL_OCEAN_DATA.csv")
 
 ## Data Cleaning
 
-Before I can start working on my statistical modelings, I need to do some cleaning and filtering to get the data ready to be analyzed. I first subset my data to include only my species of interest. I chose Copper, Kelp, Gopher, Grass, and Brown rockfish, because they have similar PLDs and are difficult to differentiate at a small size. I chose to look at data between 2012-2019 to include before, during, and after the Blob. I also narrowed the window of sampling by year to only include sampling during the months of recruitment to avoid a seasonal pattern from emerging. I chose to only look at the two most consistently sampled sites, which were located at Santa Cruz island.
+Before I can start working on my statistical modelings, I need to do some cleaning and filtering to get the data ready to be analyzed. I first subset my data to include only my species of interest. I chose Copper, Kelp, Gopher, Grass, and Brown rockfish, because they have similar PLDs and are difficult to differentiate at a small size. I chose to look at data between 2012-2018 to include two years before and after the Blob. I also narrowed the window of sampling by year to only include sampling during the months of recruitment to avoid a seasonal pattern from emerging. I chose to only look at the two most consistently sampled sites, which were located at Santa Cruz island.
 
 ```{r}
 recruits <- left_join(smurf, smurf_sp)
@@ -113,7 +113,7 @@ ggplot(rf_yoy_av, aes(year, av_fish)) +
        color = "Species") +
   theme_light()
 ```
-The red-dashed lines denote the beginning and end of the blob. Rockfish YOY abundance began increasing in the years leading up to the blob while the waters gradually warmed. Naturally the abundance dipped after reaching a peak, but began to climb again during the marine heat wave, suggesting that the warmer waters were beneficial 
+The red-dashed lines denote the beginning and end of the blob. Rockfish YOY abundance began increasing in the years leading up to the blob while the waters gradually warmed. Naturally the abundance dipped after reaching a peak, but began to climb again during the marine heat wave, suggesting that the warmer waters could have been beneficial for YOY development.
 
 ```{r}
 for(i in 1:nrow(rf_yoy)){
@@ -125,20 +125,19 @@ for(i in 1:nrow(rf_yoy)){
     }
 }
 ```
-
 ## Statistical analysis
 ### Hurdle Model
-In order to analyze this data, I selected a hurdle model because the data contains many 0's. Hurdle models are a type of hierarchical model that first tests presence and absence (0 and 1) with a predictor variable, then tests abundance. The presence-absence model is written using a Binomial model:
+In order to analyze this data, I selected a hurdle model because the data contains many 0's. Hurdle models are a type of hierarchical model that first test presence and absence (0 and 1), then tests abundance without 0's. The presence-absence model is written using a Binomial regression:
 $$FishPresence \sim Binomial(1, p) $$
 
 $$logit(p) = \beta_0 + \beta_1 SST + \beta_2 BEUTI$$
-The abundance uses a Negative Binomial model:
+The abundance uses a Negative Binomial regression:
 $$YOYcount \sim NegativeBinomial(\mu, \theta)$$
 $$log(\mu) = \beta_3 + \beta_4 SST + \beta_5 BEUTI$$
 
-For simplicity in understanding the model, I only selected temperature as predictor variable to simulate data and return my selected beta values. To begin simulating data, I need to generate x values based on the SST lag 30 days variable from the original data. From there I can use those temperatures and beta values I selected to run the binomial equation to find `logit(p)`. I think take the inverse logit of those values to generate p which represents the probability of success. Using that probability, I simulated a success variable with `rbinom()` to generate 0's and 1's. 
+For simplicity in understanding the model, I only selected temperature as predictor variable to simulate data and return my selected beta values. To begin simulating data, I need to generate x values representing the temperature data. From there, I can use those temperatures and beta values I selected to run the binomial equation to find `logit(p)`. I then can take the inverse logit of those values to generate p which represents the probability of success. Using that probability, I simulated a success variable with `rbinom()` to generate 0's and 1's. 
 
-Similar to the binomial step, I chose new beta values for the equation and used the same generated temperature data. The output of the negative binomial equation gives log of mu, or the mean. By applying an exponential to that, the mean of the data is found, which is then used to simulate count data using `rnbinom()`.
+Similar to the binomial step, I chose new beta values for the equation and used the same generated temperature data. The output of the negative binomial equation gives log of mu, or the mean. By applying an exponential to that, the mean of the predicted data is found, which is then used to simulate count data using `rnbinom()`. Actual abundance can be calculated by multiplying the simulated success and abundance together.
 
 ```{r}
 B0 <- 3
@@ -167,22 +166,8 @@ modelsummary(sim_hurdle_model)
 ```
 I successfully simulated data, applied the hurdle model, and got my beta values back!
 
-
-
-## Hurdle Model Application
-After completing a simulation of data and running a hurdle model, I can apply it to my data. I will add my upwelling variable back in to test my hypothesis
-```{r}
-true_hurdle_model <- hurdle(total_fish_collected ~ SST_D30 * beuti_30, 
-                            data = rf_yoy,
-                            dist = "negbin",
-                            zero.dist = "binomial")
-
-modelsummary(true_hurdle_model)
-```
-
-
 ## Generate predictions with hurdle model
-After completing a simulation of data and running a hurdle model, I can apply it to my data. I will add my upwelling variable back in to test my hypothesis
+After completing a simulation of data and running a hurdle model, I can apply it to my data. I will add my upwelling variable back in to run my model.
 ```{r}
 true_hurdle_model <- hurdle(total_fish_collected ~ SST_D30 * beuti_30, 
                             data = rf_yoy,
@@ -192,7 +177,7 @@ true_hurdle_model <- hurdle(total_fish_collected ~ SST_D30 * beuti_30,
 modelsummary(true_hurdle_model)
 ```
 
-
+I can create a prediction grid by generating SSTs from my real data ranges and keeping the upwelling index constant by taking the mean. While the upwelling index often seasonally fluctuates in the real world, I will assume a constant value because I am only looking at recruitment during a short period during the year. Keeping it constant will create simplicity while interpreting the model predictions. I will use bootstrapping to resample the original data set with replacement and apply the hurdle model to make predictions for the mean YOY abundance.
 ```{r}
 pred_grid <- expand_grid(SST_D30 = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
                                            max(rf_yoy$SST_D30, na.rm = TRUE),
@@ -218,7 +203,7 @@ boot <-  map_dfr(1:1000, \(i) {
 })
 ```
 
-
+I also can predict the mean YOY abundance using the entire population to create a best fit line for the model.
 ```{r}
 pred_hurdle_model <- mutate(pred_grid,
                             count = predict(object = true_hurdle_model,
@@ -237,8 +222,10 @@ ggplot(boot, aes(SST_D30, count)) +
   theme_light()
 ```
 
-The confidence intervals are visualized through the bootstrapped values. According to the predictions, at an SST of 11.5 degrees C, we 95% confident the mean count of YOY's would fall between 25 and 175. On the higher end of the temperature range, around 16.5 degrees C, we are 95% confident the mean abundance of YOY's would fall between 0 and 60. The narrowest CI occurs around 14 degrees C, where we are 95% confident the mean value falls between 20 and 45 YOY. Additionally, there appears to be a negative relationship between SST and rockfish YOY abundance, leading me to fail to reject my null hypothesis.
+The confidence intervals are visualized through the bootstrapped values. According to the predictions, at an SST of 11.5 degrees C, we are 95% confident the mean YOY abundance would fall between 25 and 175. On the higher end of the temperature range, around 16.5 degrees C, we are 95% confident the mean abundance of YOY's would fall between 0 and 60. The narrowest CI occurs around 14 degrees C, where we are 95% confident the mean value falls between 20 and 45 YOY. Additionally, there appears to be a negative relationship between SST and rockfish YOY abundance. Without further statistical testing, I cannot conclude from the data whether temperature had an effect on rockfish recruitment, leading me to fail to reject my null hypothesis. However, further testing is required to come to a conclusion on the effects of temperature on rockfish recruitment.
 
+## BONUS! Hurdle model without upwelling predictor variable
+To determine the influence of the upwelling index on the model, I can rerun the previous bootstrapping and true population model fit to observe how only temperature influences YOY abundance predictions.
 ```{r}
 pred_grid2 <- expand_grid(SST_D30 = seq(min(rf_yoy$SST_D30, na.rm = TRUE),
                                            max(rf_yoy$SST_D30, na.rm = TRUE),
@@ -262,8 +249,6 @@ boot2 <-  map_dfr(1:1000, \(i) {
 })
 
 ```
-## Using a hurdle model without upwelling predictor variable
-Because of the hurdle model structure it is hard to visualize how confounding variables influence the response. I removed upwelling from the model and bootstrapped to determine how upwelling impacts the relationship between SST and YOY abundance. 
 
 ```{r}
 true_hurdle_model2 <- hurdle(total_fish_collected ~ SST_D30, 
@@ -288,4 +273,4 @@ ggplot(boot2, aes(SST_D30, count)) +
        title = "Hurdle model prediction of YOY abundance") +
   theme_light()
 ```
-Without upwelling, temperature appears to have less of an effect on YOY abundance. Additionally, the CI at both tail ends are noticebly larger than in the model including upwelling. While no definititve conclusions can be made from the data about impacts of SST and upwelling, there does appear to be a negative relationship between temperature and YOY abundance, with that relationship increasing with the addition of upwelling.
+Without upwelling, temperature appears to have less of an effect on YOY abundance. Additionally, the CI at both tail ends are noticebly larger than in the model that includes upwelling. While no definitive conclusions can be made from the data visualization about the impacts of SST and upwelling, there does appear to be a negative relationship between temperature and YOY abundance, with that relationship strengthening with the addition of upwelling.
